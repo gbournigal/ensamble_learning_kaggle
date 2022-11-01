@@ -5,6 +5,7 @@ Created on Tue Nov  1 10:37:56 2022
 @author: gbournigal
 """
 
+import pickle
 import os
 import pandas as pd
 from pathlib import Path
@@ -100,6 +101,8 @@ rnd_search.fit(X=train.drop(columns=['label']),
                y=train['label'])
 
 results_rnd = pd.DataFrame(rnd_search.cv_results_)
+pickle.dump(results_rnd, open(f'rnd_search_lightgbm.pickle', 'wb'))
+
 
 params_opt = {'feature_fraction': 0.7403293155638789, 'lambda': 1, 'learning_rate': 0.012102657303897132, 'max_depth': 3, 'min_child_samples': 60, 'n_estimators': 550, 'n_jobs': -2, 'num_leaves': 50, 'objective': 'binary', 'reg_alpha': 1, 'subsample': 0.7, 'subsample_freq': 8}
 
