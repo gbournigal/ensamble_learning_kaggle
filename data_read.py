@@ -113,3 +113,36 @@ model.fit(X=train.drop(columns=['label']),
 submission['pred'] = model.predict_proba(test)[:, 1]
 submission.to_csv('submission.csv')
 
+
+from sklearn.decomposition import PCA
+from sklearn.model_selection import cross_validate
+
+X = train.drop(columns=['label'])
+
+pca = PCA(n_components=250)
+
+pca = pca.fit(X)
+
+X_new = pca.transform(X)
+model_pca = LGBMClassifier(**params_opt)
+cross_result = cross_validate(model_pca, 
+                              X_small, 
+                              train['label'],
+                              cv=5,
+                              return_train_score=True,
+                              scoring='neg_log_loss')
+
+best_features = pd.DataFrame({'importance':model.feature_importances_, 'features':model.feature_name_})
+
+columns = list(best_features[best_features['importance'] > -1]['features'])
+
+X_small = X[columns]
+X_small['mean'] = X_small.mean(axis=1)
+X_small['std'] = X_small.std(axis=1)
+
+model = LGBMClassifier(**params_opt)
+model.fit(X=X_small,
+          y=train['label'])
+submission['pred'] = model.predict_proba(test[columns])[:, 1]
+submission.to_csv('submission.csv')
+
