@@ -14,19 +14,6 @@ from sklearn.model_selection import RandomizedSearchCV
 from scipy.stats import uniform
 
 
-submission = pd.read_csv('sample_submission.csv', index_col='id')
-
-train = pd.read_csv('train.csv', index_col='id')
-test = pd.read_csv('test.csv', index_col='id')
-
-path = Path('submission_files/')
-
-subs = sorted(os.listdir(path))
-
-
-s0 = pd.read_csv(path / subs[0], index_col='id')
-
-
 def get_train_full_data():
     train = pd.read_csv('train_labels.csv', index_col='id')
     test = pd.read_csv('sample_submission.csv', index_col='id').drop(columns=['pred'])
@@ -51,9 +38,6 @@ def get_train_full_data():
     train.to_csv('train.csv')
     test.to_csv('test.csv')
         
-
-train = train.clip(0, 1)
-test = test.clip(0, 1)
 
 model = LGBMClassifier(n_jobs=-1,
                        max_depth=3)
