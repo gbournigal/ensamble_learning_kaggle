@@ -10,8 +10,6 @@ import os
 import pandas as pd
 from pathlib import Path
 from lightgbm import LGBMClassifier
-from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import uniform
 
 
 def get_train_full_data():
@@ -39,94 +37,9 @@ def get_train_full_data():
     test.to_csv('test.csv')
         
 
-model = LGBMClassifier(n_jobs=-1,
-                       max_depth=3)
-model.fit(X=train.drop(columns=['label']),
-          y=train['label'])
-submission['pred'] = model.predict_proba(test)[:, 1]
-submission.to_csv('submission.csv')
-
-submission.drop(columns=['pred'], inplace=True)
-submission['pred'] = test.mean(axis=1)
-submission.to_csv('submission.csv')
 
 
 
 
-param_distribs = {
-    "objective": ["binary"],
-    "num_leaves": range(10, 120, 10),
-    "n_estimators": range(200, 600, 50),
-    "learning_rate": uniform(0.01, 0.05),
-    "max_depth": range(3, 5),
-    "feature_fraction": uniform(0.65, 0.1),
-    "subsample": [0.7],
-    "subsample_freq": [8],
-    "n_jobs": [-2],
-    "reg_alpha": [1, 2],
-    'lambda': [1, 2],
-    "min_child_samples": range(50, 140, 10),  
-}
 
-
-lgbm = LGBMClassifier()
-rnd_search = RandomizedSearchCV(
-    lgbm,
-    param_distributions=param_distribs,
-    n_iter=100,
-    cv=3,
-    scoring="neg_log_loss",
-    verbose=2,
-    random_state=1,
-    n_jobs=1,
-    return_train_score=True
-)
-rnd_search.fit(X=train.drop(columns=['label']),
-               y=train['label'])
-
-results_rnd = pd.DataFrame(rnd_search.cv_results_)
-pickle.dump(results_rnd, open(f'rnd_search_lightgbm.pickle', 'wb'))
-
-
-params_opt = {'feature_fraction': 0.7403293155638789, 'lambda': 1, 'learning_rate': 0.012102657303897132, 'max_depth': 3, 'min_child_samples': 60, 'n_estimators': 550, 'n_jobs': -2, 'num_leaves': 50, 'objective': 'binary', 'reg_alpha': 1, 'subsample': 0.7, 'subsample_freq': 8}
-
-
-model = LGBMClassifier(**params_opt)
-model.fit(X=train.drop(columns=['label']),
-          y=train['label'])
-submission['pred'] = model.predict_proba(test)[:, 1]
-submission.to_csv('submission.csv')
-
-
-from sklearn.decomposition import PCA
-from sklearn.model_selection import cross_validate
-
-X = train.drop(columns=['label'])
-
-pca = PCA(n_components=250)
-
-pca = pca.fit(X)
-
-X_new = pca.transform(X)
-model_pca = LGBMClassifier(**params_opt)
-cross_result = cross_validate(model_pca, 
-                              X_small, 
-                              train['label'],
-                              cv=5,
-                              return_train_score=True,
-                              scoring='neg_log_loss')
-
-best_features = pd.DataFrame({'importance':model.feature_importances_, 'features':model.feature_name_})
-
-columns = list(best_features[best_features['importance'] > -1]['features'])
-
-X_small = X[columns]
-X_small['mean'] = X_small.mean(axis=1)
-X_small['std'] = X_small.std(axis=1)
-
-model = LGBMClassifier(**params_opt)
-model.fit(X=X_small,
-          y=train['label'])
-submission['pred'] = model.predict_proba(test[columns])[:, 1]
-submission.to_csv('submission.csv')
 
